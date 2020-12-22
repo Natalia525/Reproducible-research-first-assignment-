@@ -1,0 +1,166 @@
+---
+title: "PA1_Template"
+author: "Natalia Flechas"
+date: "19/12/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## **View Data**
+
+```{r}
+activity<-read.csv("activity.csv",header = TRUE,sep = ",")
+names(activity)
+str(activity)
+activity$date<-as.Date(activity$date)
+```
+
+## Charge Packages
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(ggpubr)
+theme_set(theme_light())
+```
+
+## Transform data
+
+```{r}
+weekday<-weekdays(activity$date)
+activity<-cbind(activity,weekday)
+head(activity)
+activity<-as_tibble(activity)
+str(activity)
+```
+
+## To view summary data 
+
+```{r}
+summary(activity)
+```
+
+## Histogram of steps per day 
+
+
+```{r}
+histogram_steps_per_day1<-activity%>%select(steps,date)%>%group_by(date)%>%summarise(sumSteps=sum(steps))
+a<-ggplot(histogram_steps_per_day1,aes(x=sumSteps))
+b<-a+geom_histogram(bins=30,color="black",fill="yellow")+labs(title = "Histogram of steps per day",x="Steps per day",y="Frequency")
+b
+```
+
+## Mean and Median of data 
+
+```{r}
+histogram_steps_per_day1<-na.omit(histogram_steps_per_day1)
+mean(histogram_steps_per_day1$sumSteps)
+median(histogram_steps_per_day1$sumSteps)
+```
+
+## **What is the average daily activity pattern?**
+
+```{r}
+daily_activity_pattern<-aggregate(activity$steps,by=list(activity$interval),FUN=mean,na.rm=TRUE)
+daily_activity_pattern<-as_tibble(daily_activity_pattern)
+ts_dailypattern<-ggplot(data = daily_activity_pattern,aes(x=Group.1,y=x))+geom_line(color="#00AFBB",size=1)+labs(title="Time series of steps by interval",x="Interval",y="mean of steps")
+ts_dailypattern
+```
+
+## Maximum of number of steps by interval 
+
+```{r}
+max(daily_activity_pattern$x)
+```
+
+## **Input missing values**
+
+## Calculate and report of total number of missing values in dataset 
+```{r}
+sum(is.na(activity$steps))
+````
+
+## The strategy for imput missing values is not sophisticated. For example we can use the mean/median for data day. 
+
+```{r}
+activity_impute_mean<-data.frame(sapply(activity,function(x)ifelse(is.na(x),mean(x,na.rm = TRUE),x)))
+```
+
+## See the histogram of imputed data 
+
+```{r}
+activity_impute_mean$steps<-as.numeric(activity_impute_mean$steps)
+activity_impute_mean$interval<-as.integer(activity_impute_mean$interval)
+Hactivity_impute_mean<-activity_impute_mean%>%select(date,steps)%>%group_by(date)%>%summarise(sumSteps=sum(steps))
+head(Hactivity_impute_mean)
+b<-ggplot(Hactivity_impute_mean,aes(x=sumSteps))
+c<-b+geom_histogram(bins = 30,color="black",fill="blue")+labs(title = "Histogram of steps in imputed data",x="Steps",y="Frequency")
+c
+```
+
+## Mean and Median of imputed data
+
+```{r}
+mean(Hactivity_impute_mean$sumSteps)
+median(Hactivity_impute_mean$sumSteps)
+```
+
+## Imputed data has not difference with initial data. 
+
+## **Are there differences in activity patterns between weekdays and weekends?**
+
+### Weekday variable.
+```{r}
+ innerweek<-activity_impute_mean%>%select(steps,interval,weekday)%>%filter(weekday%in%c("lunes","martes","miércoles","jueves","viernes"))
+head(innerweek)
+```
+
+### Plot weekday time series.
+```{r}
+innerweek<-activity_impute_mean%>%select(steps,interval,weekday)%>%filter(weekday%in%c("lunes","martes","miércoles","jueves","viernes"))
+innerweek$steps<-as.numeric(innerweek$steps)
+innerweek$interval<-as.integer(innerweek$interval)
+str(innerweek)
+ts_innerweek<-aggregate(innerweek$steps,by=list(innerweek$interval),FUN=mean)
+names(ts_innerweek)<-c("interval","steps")
+```
+```{r}
+q<-ggplot(data = ts_innerweek,aes(x=interval,y=steps))+geom_line(color="#DF0174",size=1)+labs(title="Time series of steps per interval in weekdays",x="Interval of minutes",y="Steps")
+q
+```
+
+### Summary of weekday data 
+```{r}
+summary(ts_innerweek$steps)
+```
+
+### Weekend variable.
+```{r}
+weekends<-activity_impute_mean%>%select(steps,interval,weekday)%>%filter(weekday%in%c("sábado","domingo"))
+```
+
+### Plot weekend time series. 
+```{r}
+weekends$steps<-as.numeric(weekends$steps)
+weekends$interval<-as.integer(weekends$interval)
+ts_weekends<-aggregate(weekends$steps,by=list(weekends$interval),FUN=mean)
+names(ts_weekends)<-c("interval","steps")
+r<-ggplot(ts_weekends,aes(x=interval,y=steps))+geom_line(color="#01DF3A",size=1)+labs(title = "Time series of steps per interval in weekends",x="Interval of minutes",y="Steps")
+r
+```
+
+### Summary of weekend data.
+```{r}
+ summary(ts_weekends$steps)
+```
+
+
+
+
+
+
+
+
